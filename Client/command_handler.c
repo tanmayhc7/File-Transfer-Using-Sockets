@@ -39,11 +39,14 @@ void encrypt_data(char* filename)
 /*
 Parse input command and call corresponding function
 */
-void decode_command(char* cmd){
+void decode_command(char *cmd){
 	char* command;
 	char* filename;
 	command = strtok(cmd, "\n ");
 	filename = strtok(NULL, "\n ");
+	
+	printf("Command: %s\n",command);
+	printf("Filename: %s\n",filename);
 	
 	if(strcmp(command,"put")==0)
 	{
@@ -59,11 +62,11 @@ void decode_command(char* cmd){
 		close(server_socket);			//close sock before exit
 		exit(EXIT_SUCCESS);
 	} else{
-//		char message [50];
-//		bzero(message,sizeof(message));
+		char message [50];
+		bzero(message,sizeof(message));
 		printf("Invalid Command\n");
-//		recvfrom(server_socket,message,50,0,  (struct sockaddr *)&server, (socklen_t *)&addr_length);
-//		printf("%s",message);
+		recvfrom(server_socket,message,sizeof(message),0,  (struct sockaddr *)&server, (socklen_t *)&addr_length);
+		printf("%s",message);
 	}
 }
 
@@ -99,10 +102,9 @@ void send_file(char * filename){
         
         printf("File size = %ld\n",file_size);
 
-/*        sprintf(asci,"%ld",file_size);
-        //send file size to reciever
-        nbytes = sendto(server_socket, asci, strlen(asci), 0, (struct sockaddr *)&server, (socklen_t *)&addr_length);
-*/
+	   sprintf(ack__ask,"%ld",file_size);
+        //send file size to receiver
+        server_bytes = sendto(server_socket, ack__ask, strlen(ack__ask), 0, (struct sockaddr *)&server, addr_length);       
         
         if(file_size<=0){
         	printf("Error with the file..filesize less than 0.. :( \n");
@@ -110,9 +112,10 @@ void send_file(char * filename){
         	return;
         }
         
-        sprintf(ack__ask,"%ld",file_size);
-        //send file size to reciever
+/*        sprintf(ack__ask,"%ld",file_size);
+        //send file size to receiver
         server_bytes = sendto(server_socket, ack__ask, strlen(ack__ask), 0, (struct sockaddr *)&server, addr_length);
+*/
         
         //set time out for recvfrom() so as to resend for packet/ack drop
 	struct timeval tv;
@@ -140,7 +143,7 @@ void send_file(char * filename){
 		p.checksum=0;
 		for(int i=0;i<num_loops_to_run;i++){
 			printf("Sending Packet Number %d\n",p.seq_no++);
-			//send until ack recieved
+			//send until ack received
 			while(!flag)
                         {
                         	//set fp to the start of the block to be copied
@@ -154,11 +157,11 @@ void send_file(char * filename){
 
 				bzero(ack__get,sizeof(ack__get));
 
-				server_bytes = recvfrom(server_socket, ack__get, 1000, 0, (struct sockaddr *)&server, (socklen_t *)&addr_length);
+				server_bytes = recvfrom(server_socket, ack__get, sizeof(ack__get), 0, (struct sockaddr *)&server, (socklen_t *)&addr_length);
 
-				if(server_bytes>0 && strcmp(ack__get,"recieved")==0)
+				if(server_bytes>0 && strcmp(ack__get,"received")==0)
 				{
-					//if ack recieved set flag to 1 and read next chunk     
+					//if ack received set flag to 1 and read next chunk     
 					flag = 1;
 					seek_pos+= sizeof(p.payload);
 				} else{
@@ -177,14 +180,17 @@ void send_file(char * filename){
 		fread(p.payload,file_size,1,fp);	
 	}
 	p.checksum = checksum(p.payload,(file_size-seek_pos));
-	//resend till ack is recieved
+	//resend till ack is received
 	while(!flag)
 	{
 		server_bytes = sendto(server_socket, (void *)&p, sizeof(p), 0, (struct sockaddr *)&server, addr_length);
 		bzero(ack__get,sizeof(ack__get));
-		server_bytes = recvfrom(server_socket, ack__get, 1000, 0, (struct sockaddr *)&server, (socklen_t *)&addr_length);
-		if(server_bytes > 0 && strcmp(ack__get,"recieved") == 0)
+		server_bytes = recvfrom(server_socket, ack__get, sizeof(ack__get), 0, (struct sockaddr *)&server, (socklen_t *)&addr_length);
+		if(server_bytes > 0 && strcmp(ack__get,"received") == 0){
 		        flag = 1;
+		} else {
+		        printf("\t\t........TIMEOUT.......\n");
+		} 
 	}
 	flag = 0;
 	
@@ -198,7 +204,7 @@ void send_file(char * filename){
         //decode file data 
 	encrypt_data(filename);	
 
-	printf("\n\n\t\t\t FILE SENT");
+	printf("\n\n\t\t\t FILE SENT...");
 }
 
 void receive_file(char * filename){
@@ -255,17 +261,17 @@ void receive_file(char * filename){
 				
 				printf("Receiving packet Num: %d\n",p.seq_no);
 				
-				//if packet recieved is as expected then write to file and send ack
+				//if packet received is as expected then write to file and send ack
 				if( (server_bytes>0) && (p.seq_no == expected_seq_no)){
 				
-					//if the packet recieved is the last for a big file or first for a small file
+					//if the packet received is the last for a big file or first for a small file
 					if(p.seq_no == (int)(file_size/sizeof(p.payload)) + 1){					
 						if(p.checksum != checksum(p.payload,(file_size - ((int)file_size/sizeof(p.payload)) * sizeof(p.payload)))){
 							flag=0;
 				                	char message[50];
 							bzero(message,sizeof(message));
 							sprintf(message,"Checksum did not match...\n");
-							sendto(server_socket, message, strlen(message), 0, (struct sockaddr *)&server, addr_length);
+//							sendto(server_socket, message, strlen(message), 0, (struct sockaddr *)&server, addr_length);
 					         	printf("\t\t\t%s\n",message);
 					               continue;
 		       			 }
@@ -277,30 +283,25 @@ void receive_file(char * filename){
 				                	char message[50];
 							bzero(message,sizeof(message));
 							sprintf(message,"Checksum did not match...\n");
-							sendto(server_socket, message, strlen(message), 0, (struct sockaddr *)&server, addr_length);
+//							sendto(server_socket, message, strlen(message), 0, (struct sockaddr *)&server, addr_length);
 					         	printf("\t\t\t%s\n",message);
 					               continue;
 		       			 }
 						fwrite(p.payload,sizeof(char),sizeof(p.payload),fp);
 		       			 
 					}
-					expected_seq_no++;
+					expected_seq_no++; flag=1;
 					num_bytes_received+=sizeof(p.payload);
-					char message[50];
-					bzero(message,sizeof(message));
-					sprintf(message,"Received\n");
-					server_bytes=sendto(server_socket, message, strlen(message), 0, (struct sockaddr *)&server, addr_length);		
+		
+					server_bytes=sendto(server_socket, "received", 8, 0, (struct sockaddr *)&server, addr_length);		
 
 				} else if(server_bytes>0 && (p.seq_no == expected_seq_no - 1)){
-				//ifpacket recieved is 1 less than expected meaning ack got dropped. hence dont rewrite packet, just respond with ack
+				//ifpacket received is 1 less than expected meaning ack got dropped. hence dont rewrite packet, just respond with ack
 					flag=1;
-					char message[50];
-					bzero(message,sizeof(message));
-					sprintf(message,"Received\n");
-					server_bytes=sendto(server_socket, message, strlen(message), 0, (struct sockaddr *)&server, addr_length);		
+					server_bytes=sendto(server_socket, "received", 8, 0, (struct sockaddr *)&server, addr_length);	
 				}
-			flag=0;
 		}
+		flag=0;
 	}
 	
 	fclose(fp);

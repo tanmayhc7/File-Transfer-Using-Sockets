@@ -23,8 +23,8 @@
 typedef struct sockaddr_in sock_s;
 
 /*
-This is structure of packet to be sent to and from the server and client. It consists of the sequence number and checksum and payload
-*/
+   This is structure of packet to be sent to and from the server and client. It consists of the sequence number and checksum and payload
+   */
 typedef struct
 {
 	int seq_no;
@@ -42,7 +42,7 @@ extern void decode_command(char*);
 extern int checksum(char *, int);
 
 //Global variables
-int server_socket;
-sock_s server;
+int client_socket;
+sock_s client;
 int addr_length;
-int server_bytes;
+int client_bytes;

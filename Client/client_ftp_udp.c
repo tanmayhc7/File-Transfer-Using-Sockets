@@ -40,7 +40,7 @@ int main(int argc,char* argv[]){
 	addr_length=sizeof(struct sockaddr);
 	printf("Receiving handshaking data from the server...\n");
 		
-	server_bytes = recvfrom(server_socket, handshake__get_server_msg, strlen(handshake__get_server_msg), 0 , (struct sockaddr*)&server, (socklen_t *)&addr_length);
+	server_bytes = recvfrom(server_socket, handshake__get_server_msg, sizeof(handshake__get_server_msg), 0 , (struct sockaddr*)&server, (socklen_t *)&addr_length);
 	if(server_bytes < 0){
 		printf("Error receiving data from Server\n");
 		exit(EXIT_FAILURE);
@@ -72,10 +72,10 @@ int main(int argc,char* argv[]){
 		
 		bzero(command_buf,sizeof(command_buf));
 		//get user command into buffer using API: char *fgets(char *s, int size, FILE *stream)
-		fgets(command_buf,strlen(command_buf),stdin);
+		fgets(command_buf,sizeof(command_buf),stdin);
 		
 		//send user command to server
-		server_bytes=sendto(server_socket, (const void *)command_buf, strlen(command_buf), 0 , (struct sockaddr*)&server, sizeof(struct sockaddr));
+		server_bytes=sendto(server_socket, command_buf, strlen(command_buf), 0 , (struct sockaddr*)&server, sizeof(struct sockaddr));
 		
 		decode_command(command_buf);	
 	}
