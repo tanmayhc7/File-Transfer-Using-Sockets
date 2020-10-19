@@ -39,7 +39,6 @@ extern void list_file(void);
 extern void delete_file(char *);
 extern int checksum(char *, int);
 extern void decode_command(char*);
-extern int checksum(char *, int);
 
 //Global variables
 int client_socket;

@@ -23,8 +23,8 @@
 typedef struct sockaddr_in sock_s;
 
 /*
-This is structure of packet to be sent to and from the server and client. It consists of the sequence number and checksum and payload
-*/
+   This is structure of packet to be sent to and from the server and client. It consists of the sequence number and checksum and payload
+   */
 typedef struct
 {
 	int seq_no;

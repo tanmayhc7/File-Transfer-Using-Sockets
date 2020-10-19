@@ -46,7 +46,7 @@ int main (int argc, char * argv[]){
 
 
 	// Run the code continuously until exit command is typed
-	char buffer[buffer_size];
+	char buffer[50];
 	while(1)
 	{
 		printf("\n\n\t\t\tWaiting for command\n\n");
@@ -58,9 +58,5 @@ int main (int argc, char * argv[]){
 		decode_command(buffer);
 	}	
 	close(client_socket);
-
-
-
-
 	return 0;
 }
